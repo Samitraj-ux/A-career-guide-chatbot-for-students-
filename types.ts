@@ -10,4 +10,5 @@ export interface Message {
   role: Role;
   text: string;
   citations?: Citation[];
+  videoUrl?: string;
 }

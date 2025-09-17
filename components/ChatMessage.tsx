@@ -24,12 +24,21 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isLoading = false })
         )}
       </div>
       <div className={`rounded-lg px-4 py-3 max-w-[85%] md:max-w-[75%] ${isUserModel ? 'bg-gemini-dark-card' : 'bg-gemini-blue'}`}>
-        {isLoading && !message.text ? (
+        {isLoading && !message.text && !message.videoUrl ? (
             <LoadingSpinner />
         ) : (
-            <p className={`whitespace-pre-wrap ${isUserModel ? 'text-gemini-light-text' : 'text-white'}`}>
-                {message.text}
-            </p>
+            <>
+                {message.text && (
+                    <p className={`whitespace-pre-wrap ${isUserModel ? 'text-gemini-light-text' : 'text-white'}`}>
+                        {message.text}
+                    </p>
+                )}
+                {message.videoUrl && (
+                    <div className="mt-2">
+                        <video controls src={message.videoUrl} className="w-full rounded-md" />
+                    </div>
+                )}
+            </>
         )}
         {message.citations && message.citations.length > 0 && (
             <div className="mt-4 pt-3 border-t border-white/20">
