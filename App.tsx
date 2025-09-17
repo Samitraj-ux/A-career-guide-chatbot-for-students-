@@ -6,7 +6,7 @@ import ChatMessage from './components/ChatMessage';
 import ChatInput from './components/ChatInput';
 import { LoadingSpinner } from './components/icons';
 
-const SYSTEM_INSTRUCTION = 'You are a helpful and friendly AI assistant. Your responses should be informative and well-formatted.';
+const SYSTEM_INSTRUCTION = 'You are a professional and encouraging AI career guide. Your goal is to provide insightful advice on resumes, cover letters, interview skills, and career pathing. Your tone should be supportive, clear, and action-oriented. Use formatting like lists and bold text to make your advice easy to digest.';
 
 const VIDEO_STATUS_MESSAGES = [
     "Warming up the video cameras...",
@@ -65,7 +65,7 @@ const App: React.FC = () => {
           {
             id: 'init-message',
             role: 'model',
-            text: "Hello! I'm your Gemini-powered assistant. How can I help you today? You can ask me questions or give me a prompt to generate a video!",
+            text: "Hello! I am your AI Career Guide. I can help you with resume reviews, interview practice, or exploring new career paths. How can I assist you with your career goals today?",
           },
         ]);
       }

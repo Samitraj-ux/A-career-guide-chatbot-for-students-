@@ -1,5 +1,5 @@
 {
-  "name": "Gemini Chat Bot",
-  "description": "A sleek, responsive chatbot interface powered by Google's Gemini API. Engage in real-time, streaming conversations with an advanced AI model.",
+  "name": "Career Guide Chat Bot",
+  "description": "An AI-powered career guide to help you with resume advice, interview preparation, and career path exploration.",
   "requestFramePermissions": []
 }
