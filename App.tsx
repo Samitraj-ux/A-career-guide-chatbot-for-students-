@@ -1,12 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { GoogleGenAI } from '@google/genai';
 import { Message, Citation } from './types';
 import Header from './components/Header';
 import ChatMessage from './components/ChatMessage';
 import ChatInput from './components/ChatInput';
+import CareerPathForm from './components/CareerPathForm';
 import { LoadingSpinner } from './components/icons';
-
-const SYSTEM_INSTRUCTION = 'You are a professional and encouraging AI career guide. Your goal is to provide insightful advice on resumes, cover letters, interview skills, and career pathing. Your tone should be supportive, clear, and action-oriented. Use formatting like lists and bold text to make your advice easy to digest.';
 
 const VIDEO_STATUS_MESSAGES = [
     "Warming up the video cameras...",
@@ -17,50 +15,19 @@ const VIDEO_STATUS_MESSAGES = [
     "Almost there, adding the finishing touches!",
 ];
 
-const INITIAL_API_KEY = 'AIzaSyBcxuVS3M8WigfLWqzLTLCZdTxfFPdTdRI';
-
 const App: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isGeneratingVideo, setIsGeneratingVideo] = useState<boolean>(false);
   const [videoStatus, setVideoStatus] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
-  const [ai, setAi] = useState<GoogleGenAI | null>(null);
-  const [apiKey, setApiKey] = useState<string | null>(null);
-  const [isApiKeyMissing, setIsApiKeyMissing] = useState(false);
-  const [tempApiKey, setTempApiKey] = useState('');
+  const [isCareerModalOpen, setIsCareerModalOpen] = useState<boolean>(false);
   
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
-  const videoStatusIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const videoStatusIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    const keyFromStorage = localStorage.getItem('gemini_api_key');
-    const effectiveKey = keyFromStorage || INITIAL_API_KEY || process.env.API_KEY;
-
-    if (effectiveKey) {
-      // If the key we're using is the initial hardcoded one and it's not already in storage,
-      // save it there for future sessions.
-      if (effectiveKey === INITIAL_API_KEY && !keyFromStorage) {
-        localStorage.setItem('gemini_api_key', effectiveKey);
-      }
-      initializeAi(effectiveKey);
-    } else {
-      setIsApiKeyMissing(true);
-    }
-  }, []);
-  
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isLoading, isGeneratingVideo]);
-
-  const initializeAi = (key: string) => {
-    try {
-      const genAI = new GoogleGenAI({ apiKey: key });
-      setAi(genAI);
-      setApiKey(key);
-      setIsApiKeyMissing(false);
-      setError(null);
-       if (messages.length === 0) {
+     if (messages.length === 0) {
         setMessages([
           {
             id: 'init-message',
@@ -69,22 +36,11 @@ const App: React.FC = () => {
           },
         ]);
       }
-    } catch (e) {
-      const errorMessage = e instanceof Error ? e.message : String(e);
-      setError(`Initialization Error: ${errorMessage}. Please provide a valid API key.`);
-      localStorage.removeItem('gemini_api_key');
-      setIsApiKeyMissing(true);
-    }
-  };
-
-  const handleApiKeySubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (tempApiKey.trim()) {
-      localStorage.setItem('gemini_api_key', tempApiKey);
-      initializeAi(tempApiKey);
-      setTempApiKey('');
-    }
-  };
+  }, []);
+  
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isLoading, isGeneratingVideo]);
 
   const startVideoStatusUpdates = () => {
     let index = 0;
@@ -103,7 +59,7 @@ const App: React.FC = () => {
   };
   
   const handleGenerateVideo = async (prompt: string) => {
-    if (isLoading || isGeneratingVideo || !ai || !apiKey) return;
+    if (isLoading || isGeneratingVideo) return;
 
     const userMessage: Message = { id: `user-${Date.now()}`, role: 'user', text: prompt };
     setMessages(prev => [...prev, userMessage]);
@@ -116,27 +72,21 @@ const App: React.FC = () => {
     setMessages(prev => [...prev, botMessage]);
 
     try {
-        let operation = await ai.models.generateVideos({
-            model: 'veo-2.0-generate-001',
-            prompt: prompt,
-            config: { numberOfVideos: 1 }
+        const response = await fetch('http://localhost:5000/api/video', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt }),
         });
 
-        while (!operation.done) {
-            await new Promise(resolve => setTimeout(resolve, 10000));
-            operation = await ai.operations.getVideosOperation({ operation: operation });
+        if (!response.ok) {
+            const errData = await response.json();
+            throw new Error(errData.error || `Request failed with status ${response.status}`);
         }
 
-        const downloadLink = operation.response?.generatedVideos?.[0]?.video?.uri;
-        if (downloadLink) {
-            const videoResponse = await fetch(`${downloadLink}&key=${apiKey}`);
-            const videoBlob = await videoResponse.blob();
-            const videoUrl = URL.createObjectURL(videoBlob);
-            
-            botMessage = { ...botMessage, text: `Video generated for prompt: "${prompt}"`, videoUrl: videoUrl };
-        } else {
-             throw new Error("Video generation completed, but no download link was found.");
-        }
+        const videoBlob = await response.blob();
+        const videoUrl = URL.createObjectURL(videoBlob);
+        
+        botMessage = { ...botMessage, text: `Video generated for prompt: "${prompt}"`, videoUrl: videoUrl };
     } catch (e: unknown) {
         const errorMessage = e instanceof Error ? `Video Error: ${e.message}` : "An unknown error occurred during video generation.";
         setError(errorMessage);
@@ -149,8 +99,16 @@ const App: React.FC = () => {
     }
   };
 
-  const handleSendMessage = async (text: string, isWebSearchEnabled: boolean) => {
-    if (isLoading || isGeneratingVideo || !ai) return;
+  const handleExploreCareers = (skills: string, interests: string, experience: string) => {
+    const userPrompt = `I want to explore career paths. Here is my profile:\n\n**Skills:**\n${skills}\n\n**Interests:**\n${interests}\n\n**Professional Experience:**\n${experience}`;
+
+    const systemInstruction = `You are a helpful and encouraging career advisor. Based on the user's skills, interests, and experience, suggest three relevant career paths. For each path, provide:\n1. A brief description of the career.\n2. The required qualifications and typical skills.\n3. The general job outlook, including demand and potential salary range.\n\nFormat your entire response in Markdown. Use a level 3 heading (###) for each career path title. Use bold for subheadings like **Description**, **Qualifications**, and **Job Outlook**.`;
+
+    handleSendMessage(userPrompt, false, systemInstruction);
+  };
+
+  const handleSendMessage = async (text: string, isWebSearchEnabled: boolean, systemInstruction?: string) => {
+    if (isLoading || isGeneratingVideo) return;
 
     const userMessage: Message = { id: `user-${Date.now()}`, role: 'user', text };
     setMessages(prev => [...prev, userMessage]);
@@ -165,25 +123,57 @@ const App: React.FC = () => {
           role: msg.role, parts: [{ text: msg.text }],
       })).filter(msg => msg.role !== 'model' || msg.parts[0].text);
 
-      const stream = await ai.models.generateContentStream({
-        model: 'gemini-2.5-flash',
-        contents: [...history, { role: 'user', parts: [{ text }] }],
-        config: {
-            ...(isWebSearchEnabled && { tools: [{ googleSearch: {} }] }),
-            systemInstruction: SYSTEM_INSTRUCTION
-        }
+      const response = await fetch('http://localhost:5000/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            history,
+            text,
+            isWebSearchEnabled,
+            systemInstruction,
+        }),
       });
+
+      if (!response.ok || !response.body) {
+          const errData = await response.json();
+          throw new Error(errData.error || `Request failed with status ${response.status}`);
+      }
       
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
       let fullResponse = '';
       let citations: Citation[] = [];
 
-      for await (const chunk of stream) {
-        fullResponse += chunk.text;
-        const groundingMetadata = chunk.candidates?.[0]?.groundingMetadata;
-        if (groundingMetadata?.groundingChunks) {
-            citations = groundingMetadata.groundingChunks.map((c: any) => c.web).filter(Boolean);
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunkStr = decoder.decode(value);
+        const lines = chunkStr.split('\n\n');
+        
+        for (const line of lines) {
+            if (line.startsWith('data: ')) {
+                const jsonData = line.substring(6);
+                if (jsonData) {
+                    try {
+                        const parsedData = JSON.parse(jsonData);
+                        if (parsedData.text) {
+                            fullResponse += parsedData.text;
+                        }
+                        if (parsedData.citations) {
+                            citations = parsedData.citations; // Overwrite with the latest citation list
+                        }
+                        setMessages(prev => prev.map(msg => 
+                            msg.id === botMessageId 
+                            ? { ...msg, text: fullResponse, citations: [...citations] } 
+                            : msg
+                        ));
+                    } catch (e) {
+                        console.error("Failed to parse stream chunk JSON:", jsonData, e);
+                    }
+                }
+            }
         }
-        setMessages(prev => prev.map(msg => msg.id === botMessageId ? { ...msg, text: fullResponse, citations } : msg));
       }
     } catch (e: unknown) {
       const errorMessage = e instanceof Error ? `Error: ${e.message}` : "An unknown error occurred.";
@@ -210,7 +200,7 @@ const App: React.FC = () => {
           <div ref={messagesEndRef} />
         </div>
          {error && (
-            <div className="container mx-auto max-w-4xl px-4">
+            <div className="container mx-auto max-w-4xl px-4 mb-4">
                 <div className="bg-red-500/20 border border-red-500 text-red-300 p-3 rounded-lg text-center">
                     {error}
                 </div>
@@ -221,34 +211,16 @@ const App: React.FC = () => {
         <ChatInput 
           onSendMessage={handleSendMessage} 
           onGenerateVideo={handleGenerateVideo}
-          isLoading={isLoading || !ai}
+          onExploreCareersClick={() => setIsCareerModalOpen(true)}
+          isLoading={isLoading}
           isGeneratingVideo={isGeneratingVideo}
         />
       </div>
-      {isApiKeyMissing && (
-        <div className="absolute inset-0 bg-gemini-dark/90 backdrop-blur-sm flex flex-col items-center justify-center z-30 p-4">
-            <div className="bg-gemini-dark-card p-8 rounded-lg shadow-2xl w-full max-w-md text-center">
-                <h2 className="text-2xl font-bold mb-4 text-gemini-dark-text">Enter Gemini API Key</h2>
-                <p className="text-gemini-light-text mb-6">
-                    To use this app, please enter your Google Gemini API key. You can get one from Google AI Studio.
-                </p>
-                <form onSubmit={handleApiKeySubmit}>
-                    <input
-                        type="password"
-                        value={tempApiKey}
-                        onChange={(e) => setTempApiKey(e.target.value)}
-                        placeholder="Enter your API key"
-                        className="w-full bg-gemini-dark border border-white/20 rounded-lg p-3 mb-4 text-gemini-dark-text focus:ring-2 focus:ring-gemini-blue focus:outline-none"
-                    />
-                    <button
-                        type="submit"
-                        className="w-full p-3 rounded-lg bg-gemini-blue text-white font-semibold hover:bg-blue-500 transition-colors"
-                    >
-                        Save and Continue
-                    </button>
-                </form>
-            </div>
-        </div>
+      {isCareerModalOpen && (
+        <CareerPathForm 
+            onClose={() => setIsCareerModalOpen(false)}
+            onSubmit={handleExploreCareers}
+        />
       )}
       {isGeneratingVideo && (
         <div className="absolute inset-0 bg-gemini-dark/80 backdrop-blur-sm flex flex-col items-center justify-center z-20">

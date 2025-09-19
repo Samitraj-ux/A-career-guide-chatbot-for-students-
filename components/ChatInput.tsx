@@ -1,14 +1,15 @@
 import React, { useState, useRef, KeyboardEvent } from 'react';
-import { SendIcon, GlobeIcon, VideoIcon } from './icons';
+import { SendIcon, GlobeIcon, VideoIcon, BriefcaseIcon } from './icons';
 
 interface ChatInputProps {
   onSendMessage: (message: string, isWebSearchEnabled: boolean) => void;
   onGenerateVideo: (prompt: string) => void;
+  onExploreCareersClick: () => void;
   isLoading: boolean;
   isGeneratingVideo: boolean;
 }
 
-const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, onGenerateVideo, isLoading, isGeneratingVideo }) => {
+const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, onGenerateVideo, onExploreCareersClick, isLoading, isGeneratingVideo }) => {
   const [input, setInput] = useState('');
   const [isWebSearchEnabled, setIsWebSearchEnabled] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -55,6 +56,15 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, onGenerateVideo, i
     <div className="p-4 bg-gemini-dark/80 backdrop-blur-sm border-t border-white/10">
       <div className="container mx-auto max-w-4xl">
         <div className="flex items-center justify-end gap-x-4 mb-2 pr-2">
+            <button
+                onClick={onExploreCareersClick}
+                disabled={isInputDisabled}
+                className="flex items-center text-sm text-gemini-light-text disabled:opacity-50"
+                aria-label="Explore career paths"
+            >
+                <BriefcaseIcon className="w-5 h-5 mr-2" />
+                <span>Explore Career Paths</span>
+            </button>
             <label htmlFor="web-search-toggle" className="flex items-center cursor-pointer">
                 <GlobeIcon className="w-5 h-5 mr-2 text-gemini-light-text" />
                 <span className="text-sm text-gemini-light-text mr-3">Search the web</span>

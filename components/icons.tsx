@@ -80,3 +80,18 @@ export const VideoIcon: React.FC<{ className?: string }> = ({ className }) => (
         <path strokeLinecap="round" strokeLinejoin="round" d="M15.91 11.672a.375.375 0 010 .656l-5.603 3.113a.375.375 0 01-.557-.328V8.887c0-.286.307-.466.557-.327l5.603 3.112z" />
     </svg>
 );
+
+export const BriefcaseIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg 
+        xmlns="http://www.w3.org/2000/svg" 
+        fill="none" 
+        viewBox="0 0 24 24" 
+        strokeWidth={1.5} 
+        stroke="currentColor" 
+        className={className}
+        aria-hidden="true"
+    >
+        <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.07a2.25 2.25 0 01-2.25 2.25H5.998a2.25 2.25 0 01-2.25-2.25v-4.07a2.25 2.25 0 01.521-1.458l2.25-3.375a2.25 2.25 0 011.838-.908h6.282a2.25 2.25 0 011.838.908l2.25 3.375a2.25 2.25 0 01.521 1.458z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 1.5v5.25m0 0l-3-3m3 3l3-3" />
+    </svg>
+);
