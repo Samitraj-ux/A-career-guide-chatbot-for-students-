@@ -24,7 +24,10 @@ Key Features
 
 • LLM Provider:Google Gemini
 • 
+
 • Deployment:  Vercel (for Frontend),Google Cloud Run (for backend).
+
+
 📧 Contact
 Project Maintainer: Darla Samitraj - darla.samit@gmail.com
 Project Link: https://a-career-guide-chatbot-for-students-liard.vercel.app/
