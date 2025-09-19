@@ -25,5 +25,5 @@ This project is built with a modern, scalable tech stack:
 • LLM Provider: Google Gemini
 
 • 
-• Deployment: Docker, Vercel (for Frontend), AWS ECS / Google Cloud Run (for Backend)
+• Deployment: Vercel (for Frontend)/Google Cloud Run (for Backend)
 
